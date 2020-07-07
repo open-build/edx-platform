@@ -21,7 +21,7 @@ from student.models import CourseEnrollment
 from util.query import use_read_replica_if_available
 
 from lms.djangoapps.verify_student.message_types import VerificationExpiry
-from lms.djangoapps.verify_student.models import SoftwareSecurePhotoVerification
+from lms.djangoapps.verify_student.models import SoftwareSecurePhotoVerification, SSOVerification
 from openedx.core.djangoapps.ace_common.template_context import get_base_template_context
 from openedx.core.djangoapps.lang_pref import LANGUAGE_KEY
 from openedx.core.djangoapps.user_api.preferences.api import get_user_preference
@@ -127,6 +127,11 @@ class Command(BaseCommand):
 
         success = True
         for verification in sspv:
+            sso_verifications = SSOVerification.objects.filter(user=verification.user)
+            # check if the user has a valid sso verification
+            for sso_verification in sso_verifications:
+                if sso_verification.expiration_datetime > now():
+                    continue
             if not verification.expiry_email_date or verification.expiry_email_date <= date_resend_days_ago:
                 batch_verifications.append(verification)
 
